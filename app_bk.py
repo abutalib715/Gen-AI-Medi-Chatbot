@@ -1,12 +1,12 @@
 from flask import Flask, render_template, jsonify, request
 from src.helper import download_hugging_face_embeddings
 from langchain_pinecone import PineconeVectorStore
+from langchain_openai import ChatOpenAI
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from src.prompt import *
-from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 
 
@@ -16,10 +16,10 @@ app = Flask(__name__)
 load_dotenv()
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
-os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
 
 index_name = "medical-chatbot"
@@ -29,19 +29,13 @@ docsearch = PineconeVectorStore.from_existing_index(
     embedding=download_hugging_face_embeddings()
 )
 
-retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-
-# Using Google Gemini instead of OpenAI
-chatModel = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",  # Free tier model
-    google_api_key=GOOGLE_API_KEY,
-    temperature=0.1
-)
-
+retriever = docsearch.as_retriever(search_type = "similarity", search_kwargs={"k": 3})
+chatModel = ChatOpenAI(model="gpt-3.5-turbo")
 prompt = ChatPromptTemplate.from_messages(
     [
         ("system", system_prompt),
         ("human", "{input}"),
+
     ]
 )
 
@@ -58,14 +52,10 @@ def chat():
     msg = request.form["msg"]
     input = msg
     print(input)
-    
-    try:
-        response = rag_chain.invoke({"input": msg})
-        print("Response: ", response["answer"])
-        return str(response["answer"])
-    except Exception as e:
-        print(f"Error: {e}")
-        return "Sorry, I encountered an error processing your request."
+    response = rag_chain.invoke({"input": msg})
+    print("Response: ", response["answer"])
+
+    return str(response["answer"])
 
 
 if __name__ == "__main__":

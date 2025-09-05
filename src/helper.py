@@ -5,7 +5,7 @@ from langchain.schema import Document
 # from langchain.embeddings import HuggingFaceEmbeddings
 
 from langchain_community.document_loaders import PyPDFLoader, DirectoryLoader
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# from langchain_community.embeddings import HuggingFaceEmbeddings
 
 
 # Extract text from PDF
@@ -40,14 +40,44 @@ def text_split(minimal_docs):
 
     return text_chunks
 
-# Download the embedding model from HuggingFace
+# # Download the embedding model from HuggingFace
+# def download_hugging_face_embeddings():
+#     """
+#     Download and return the HuggingFace embeddings model.
+#     """
+
+#     model_name = "sentence-transformers/all-MiniLM-L6-v2"
+#     embeddings = HuggingFaceEmbeddings(model_name= model_name)
+
+#     return embeddings
+
+
+# src/helper.py
+
+# ❌ OLD (deprecated):
+# from langchain.embeddings import HuggingFaceEmbeddings
+
+# ✅ NEW (updated):
+from langchain_huggingface import HuggingFaceEmbeddings
+
 def download_hugging_face_embeddings():
     """
-    Download and return the HuggingFace embeddings model.
+    Download and return HuggingFace embeddings model
     """
-
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    embeddings = HuggingFaceEmbeddings(model_name= model_name)
-
-    return embeddings
-
+    
+    try:
+        embeddings = HuggingFaceEmbeddings(model_name=model_name)
+        print(f"✅ Successfully loaded embeddings model: {model_name}")
+        return embeddings
+    except Exception as e:
+        print(f"❌ Error loading embeddings model: {e}")
+        # Fallback to a different model if needed
+        fallback_model = "sentence-transformers/all-mpnet-base-v2"
+        try:
+            embeddings = HuggingFaceEmbeddings(model_name=fallback_model)
+            print(f"✅ Loaded fallback embeddings model: {fallback_model}")
+            return embeddings
+        except Exception as e2:
+            print(f"❌ Error with fallback model: {e2}")
+            raise e2
